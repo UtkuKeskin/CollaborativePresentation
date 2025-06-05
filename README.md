@@ -78,7 +78,7 @@ CollaborativePresentation/
 │   ├── CollaborativePresentation.API/       # Web API project
 │   ├── CollaborativePresentation.Core/      # Domain entities and interfaces
 │   ├── CollaborativePresentation.Infrastructure/  # Data access and services
-│   └── CollaborativePresentation.Client/    # React frontend
+│   └── collaborative-presentation-client/    # React frontend
 ├── tests/                                    # Test projects
 ├── deployment/                               # Deployment configurations
 └── docker-compose.yml                        # Docker configuration
