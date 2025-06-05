@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: collaborative_presentation_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: CollaborativePresentationDb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - collaborative_network
+
+  api:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile.api
+    container_name: collaborative_presentation_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Database=CollaborativePresentationDb;Username=postgres;Password=postgres123
+    ports:
+      - "5000:8080"
+    depends_on:
+      - db
+    networks:
+      - collaborative_network
+
+  client:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile.client
+    container_name: collaborative_presentation_client
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - collaborative_network
+
+volumes:
+  postgres_data:
+
+networks:
+  collaborative_network:
+    driver: bridge

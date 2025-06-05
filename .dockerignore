@@ -1,0 +1,40 @@
+# .NET
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/node_modules/
+**/npm-debug.log
+**/package-lock.json
+
+# React
+**/build/
+**/dist/
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+
+# Git
+.git/
+.gitignore
+
+# Docker
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Tests
+**/coverage/
+**/*.test.js
+**/*.spec.js
