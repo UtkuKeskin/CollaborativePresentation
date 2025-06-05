@@ -10,9 +10,8 @@ public class Element : BaseEntity
     public double Width { get; set; }
     public double Height { get; set; }
     public int ZIndex { get; set; }
-    public string? Properties { get; set; } // JSON string for additional properties
-    
-    // Navigation property
+    public string? Properties { get; set; }
+
     public Slide Slide { get; set; } = null!;
 }
 

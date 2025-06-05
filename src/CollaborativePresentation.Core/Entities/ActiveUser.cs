@@ -10,7 +10,6 @@ public class ActiveUser : BaseEntity
     public DateTime LastActivityAt { get; set; }
     public bool IsConnected { get; set; }
     
-    // Navigation property
     public Presentation Presentation { get; set; } = null!;
 }
 
