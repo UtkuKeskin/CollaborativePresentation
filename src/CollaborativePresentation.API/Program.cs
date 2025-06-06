@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using CollaborativePresentation.Infrastructure.Data;
 using CollaborativePresentation.Infrastructure.Extensions;
+using CollaborativePresentation.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
