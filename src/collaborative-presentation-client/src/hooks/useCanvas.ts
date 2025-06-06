@@ -39,7 +39,6 @@ export const useCanvas = () => {
       return;
     }
 
-    // Merge current element with updates
     const updatedElement: ElementDto = {
       ...currentElement,
       ...updates,
@@ -50,14 +49,12 @@ export const useCanvas = () => {
 
     dispatch(updateElementAction({ slideId, element: updatedElement }));
     
-    // TODO: Send to server via SignalR
     console.log('Updating element:', updatedElement);
   };
 
   const deleteElement = (slideId: string, elementId: string) => {
     dispatch(removeElement({ slideId, elementId }));
     
-    // TODO: Send to server via SignalR
     console.log('Deleting element:', elementId);
   };
 

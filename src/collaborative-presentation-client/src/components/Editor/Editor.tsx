@@ -37,11 +37,9 @@ const Editor: React.FC = () => {
     try {
       dispatch(setLoading(true));
       
-      // Load presentation details
       const presentationData = await presentationApi.getById(id);
       dispatch(setPresentation(presentationData));
 
-      // Load slides
       const slidesData = await slideApi.getByPresentationId(id);
       dispatch(setSlides(slidesData));
 
@@ -88,20 +86,16 @@ const Editor: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      {/* Toolbar */}
+
       <Toolbar />
 
-      {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Slides Panel */}
         <SlidePanel />
 
-        {/* Canvas Area */}
         <div className="flex-1 flex items-center justify-center p-4">
           <Canvas slide={currentSlide} />
         </div>
 
-        {/* Users Panel */}
         <UsersPanel />
       </div>
     </div>

@@ -7,7 +7,7 @@ import TextElement from './Elements/TextElement';
 
 interface CanvasProps {
   slide: SlideDto;
-  isEditable?: boolean; // Add this to control edit permissions
+  isEditable?: boolean;
 }
 
 const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
@@ -19,7 +19,6 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
 
   const { addElement, updateElement, deleteElement } = useCanvas();
 
-  // Calculate responsive dimensions
   useEffect(() => {
     const updateDimensions = () => {
       if (!containerRef.current) return;
@@ -28,22 +27,19 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
       const containerWidth = container.clientWidth;
       const containerHeight = container.clientHeight;
 
-      // 16:9 aspect ratio
       const targetRatio = 16 / 9;
       const containerRatio = containerWidth / containerHeight;
 
       let newWidth, newHeight, newScale;
 
       if (containerRatio > targetRatio) {
-        // Container is wider than target ratio
         newHeight = containerHeight;
         newWidth = newHeight * targetRatio;
-        newScale = newHeight / 576; // Base height is 576
+        newScale = newHeight / 576;
       } else {
-        // Container is taller than target ratio
         newWidth = containerWidth;
         newHeight = newWidth / targetRatio;
-        newScale = newWidth / 1024; // Base width is 1024
+        newScale = newWidth / 1024;
       }
 
       setDimensions({ width: newWidth, height: newHeight });
@@ -58,37 +54,31 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
     };
   }, []);
 
-  // Handle double click to add text
   const handleStageDoubleClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    // Only add elements if editable
     if (!isEditable) return;
 
-    // Get click position relative to stage
     const stage = e.target.getStage();
     if (!stage) return;
 
-    // Check if clicked on background or stage
     const clickedOnEmpty = e.target === stage || 
                           (e.target.attrs && e.target.attrs.id === 'background');
     
     if (clickedOnEmpty) {
-      setSelectedId(null); // Deselect any selected element
+      setSelectedId(null);
 
       const pointerPosition = stage.getPointerPosition();
       if (!pointerPosition) return;
 
-      // Convert to relative coordinates (0-1024, 0-576)
       const x = pointerPosition.x / scale;
       const y = pointerPosition.y / scale;
 
-      // Add new text element
       const newElement: Partial<ElementDto> = {
         type: ElementType.Text,
-        content: 'Double click to edit',
-        positionX: x - 100, // Center the element on click position
-        positionY: y - 25,
+        content: '**Double click** to edit',
+        positionX: x - 100,
+        positionY: y - 40,
         width: 200,
-        height: 50,
+        height: 80,
         zIndex: slide.elements.length,
       };
 
@@ -96,25 +86,20 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
     }
   }, [isEditable, scale, slide.id, slide.elements.length, addElement]);
 
-  // Handle element selection
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id);
   }, []);
 
-  // Handle element update
   const handleElementChange = useCallback((id: string, attrs: Partial<ElementDto>) => {
     updateElement(slide.id, id, attrs);
   }, [slide.id, updateElement]);
 
-  // Handle element deletion
   const handleElementDelete = useCallback((id: string) => {
     deleteElement(slide.id, id);
     setSelectedId(null);
   }, [slide.id, deleteElement]);
 
-  // Handle click on stage
   const handleStageClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    // Deselect when clicking on empty area
     const clickedOnEmpty = e.target === e.target.getStage() || 
                           (e.target.className === 'Rect' && e.target.attrs.id === 'background');
     if (clickedOnEmpty) {
@@ -122,10 +107,8 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
     }
   }, []);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Delete selected element
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && isEditable) {
         const element = slide.elements.find(el => el.id === selectedId);
         if (element) {
@@ -133,7 +116,6 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
         }
       }
 
-      // Deselect on Escape
       if (e.key === 'Escape') {
         setSelectedId(null);
       }
@@ -191,12 +173,11 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
                         scale={scale}
                       />
                     );
-                  // TODO: Add other element types here
                   case ElementType.Shape:
                   case ElementType.Image:
                   case ElementType.Line:
                   case ElementType.Arrow:
-                    return null; // Placeholder for future element types
+                    return null;
                   default:
                     return null;
                 }

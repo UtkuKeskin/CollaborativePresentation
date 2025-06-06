@@ -43,42 +43,33 @@ const TextElement: React.FC<TextElementProps> = ({
     const groupNode = groupRef.current;
     if (!textNode || !groupNode) return;
 
-    // Hide the text element
     textNode.hide();
 
-    // Create textarea for editing
     const stage = textNode.getStage();
     if (!stage) return;
 
     const stageContainer = stage.container();
     
-    // Get the absolute position considering the stage scale and position
     const textPosition = textNode.getAbsolutePosition();
     
-    // Get stage's transform
     const transform = stage.getAbsoluteTransform().copy();
     
-    // Apply transform to get the correct position
     transform.invert();
     const position = transform.point(textPosition);
     
-    // Get stage container's bounding rect
     const stageBox = stageContainer.getBoundingClientRect();
     
-    // Calculate the actual position on screen
     const areaPosition = {
       x: position.x * scale + stageBox.left,
       y: position.y * scale + stageBox.top
     };
 
     const textarea = document.createElement('textarea');
-    document.body.appendChild(textarea); // Append to body instead of stage container
+    document.body.appendChild(textarea);
 
-    // Set initial value
     textarea.value = text;
     
-    // Style the textarea to match the text element exactly
-    textarea.style.position = 'fixed'; // Use fixed positioning
+    textarea.style.position = 'fixed';
     textarea.style.top = `${areaPosition.y}px`;
     textarea.style.left = `${areaPosition.x}px`;
     textarea.style.width = `${element.width * scale}px`;
@@ -86,20 +77,21 @@ const TextElement: React.FC<TextElementProps> = ({
     textarea.style.fontSize = `${16 * scale}px`;
     textarea.style.border = '2px solid #4299e1';
     textarea.style.borderRadius = '4px';
-    textarea.style.padding = '4px';
+    textarea.style.padding = '8px';
     textarea.style.margin = '0px';
-    textarea.style.overflow = 'hidden';
+    textarea.style.overflow = 'auto';
     textarea.style.background = 'rgba(255, 255, 255, 0.95)';
     textarea.style.outline = 'none';
     textarea.style.resize = 'none';
     textarea.style.lineHeight = '1.5';
-    textarea.style.fontFamily = 'Arial, sans-serif';
+    textarea.style.fontFamily = 'monospace';
     textarea.style.color = 'black';
     textarea.style.boxSizing = 'border-box';
     textarea.style.zIndex = '10000';
     textarea.style.transformOrigin = 'left top';
 
-    // Select all text when focused
+    textarea.placeholder = 'Type your text here. Supports markdown:\n**bold**, *italic*, # heading, - list, etc.';
+
     textarea.focus();
     textarea.select();
 
@@ -115,7 +107,7 @@ const TextElement: React.FC<TextElementProps> = ({
     let isRemoving = false;
 
     textarea.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
         e.preventDefault();
         if (!isRemoving) {
           isRemoving = true;
@@ -136,7 +128,6 @@ const TextElement: React.FC<TextElementProps> = ({
       }
     });
 
-    // Handle clicks outside the textarea
     const handleClickOutside = (e: MouseEvent) => {
       if (!textarea.contains(e.target as Node)) {
         if (!isRemoving) {
@@ -152,12 +143,10 @@ const TextElement: React.FC<TextElementProps> = ({
       }
     };
 
-    // Add slight delay to prevent immediate trigger
     setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
     }, 100);
 
-    // Clean up on unmount
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       if (textarea.parentNode) {
@@ -181,19 +170,17 @@ const TextElement: React.FC<TextElementProps> = ({
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
 
-    // Reset scale and adjust size
     node.scaleX(1);
     node.scaleY(1);
 
     onChange({
       positionX: node.x(),
       positionY: node.y(),
-      width: Math.max(5, node.width() * scaleX),
-      height: Math.max(5, node.height() * scaleY),
+      width: Math.max(50, node.width() * scaleX),
+      height: Math.max(30, node.height() * scaleY),
     });
   };
 
-  // Handle delete key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isSelected && (e.key === 'Delete' || e.key === 'Backspace') && !isEditing) {
@@ -207,6 +194,47 @@ const TextElement: React.FC<TextElementProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isSelected, isEditing, onDelete]);
+
+  const parseMarkdown = (markdown: string): { text: string; fontStyle?: string; fontWeight?: string; fontSize?: number } => {
+    let processedText = markdown;
+    let fontWeight = 'normal';
+    let fontStyle = 'normal';
+    let fontSize = 16;
+
+    if (processedText.startsWith('# ')) {
+      processedText = processedText.substring(2);
+      fontSize = 24;
+      fontWeight = 'bold';
+    } else if (processedText.startsWith('## ')) {
+      processedText = processedText.substring(3);
+      fontSize = 20;
+      fontWeight = 'bold';
+    } else if (processedText.startsWith('### ')) {
+      processedText = processedText.substring(4);
+      fontSize = 18;
+      fontWeight = 'bold';
+    }
+
+    if (processedText.includes('**')) {
+      processedText = processedText.replace(/\*\*([^*]+)\*\*/g, '$1');
+      fontWeight = 'bold';
+    }
+
+    if (processedText.includes('*') || processedText.includes('_')) {
+      processedText = processedText.replace(/\*([^*]+)\*/g, '$1').replace(/_([^_]+)_/g, '$1');
+      fontStyle = 'italic';
+    }
+
+    processedText = processedText
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/^[-*+]\s+/gm, '• ')
+      .replace(/^\d+\.\s+/gm, '');
+
+    return { text: processedText, fontStyle, fontWeight, fontSize };
+  };
+
+  const parsedText = parseMarkdown(text);
 
   return (
     <>
@@ -228,21 +256,29 @@ const TextElement: React.FC<TextElementProps> = ({
         <Rect
           width={element.width}
           height={element.height}
-          fill="transparent"
+          fill={isSelected ? 'rgba(66, 153, 225, 0.1)' : 'transparent'}
+          stroke={isSelected ? '#4299e1' : 'transparent'}
+          strokeWidth={1}
+          dash={isSelected ? [5, 5] : []}
         />
+        
         <Text
           ref={textRef}
-          text={text}
-          fontSize={16}
+          text={parsedText.text}
+          fontSize={parsedText.fontSize}
           fontFamily="Arial"
+          fontStyle={parsedText.fontStyle}
+          fontWeight={parsedText.fontWeight}
           fill="black"
           width={element.width}
           height={element.height}
+          padding={8}
           align="left"
-          verticalAlign="middle"
+          verticalAlign="top"
           wrap="word"
         />
       </Group>
+      
       {isSelected && !isEditing && (
         <Transformer
           ref={transformerRef}
@@ -257,8 +293,7 @@ const TextElement: React.FC<TextElementProps> = ({
             'bottom-right',
           ]}
           boundBoxFunc={(oldBox, newBox) => {
-            // Limit minimum size
-            if (newBox.width < 5 || newBox.height < 5) {
+            if (newBox.width < 50 || newBox.height < 30) {
               return oldBox;
             }
             return newBox;
