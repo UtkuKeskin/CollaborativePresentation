@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { presentationApi } from '../../services/api';
+import { useSignalR } from '../../hooks/useSignalR';
 import { CreatePresentationDto } from '../../types';
 
 interface CreateModalProps {
@@ -12,6 +13,7 @@ interface CreateModalProps {
 
 const CreateModal: React.FC<CreateModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const navigate = useNavigate();
+  const { joinPresentation } = useSignalR();
   const [formData, setFormData] = useState<CreatePresentationDto>({
     title: '',
     creatorNickname: '',
@@ -55,9 +57,9 @@ const CreateModal: React.FC<CreateModalProps> = ({ isOpen, onClose, onSuccess })
       const presentation = await presentationApi.create(formData);
       onSuccess();
       
-      await presentationApi.join(presentation.id, {
-        nickname: formData.creatorNickname,
-      });
+      await joinPresentation(presentation.id, formData.creatorNickname);
+      
+      localStorage.setItem(`presentation_${presentation.id}_nickname`, formData.creatorNickname);
       
       navigate(`/presentation/${presentation.id}`);
     } catch (error) {

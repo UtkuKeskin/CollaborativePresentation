@@ -3,12 +3,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { AppDispatch, RootState } from '../store';
 import { updateElement as updateElementAction, removeElement } from '../store/presentationSlice';
 import { ElementDto } from '../types';
+import { signalRService } from '../services/signalRService';
 
 export const useCanvas = () => {
   const dispatch = useDispatch<AppDispatch>();
   const slides = useSelector((state: RootState) => state.presentation.slides);
+  const isConnected = useSelector((state: RootState) => state.user.isConnected);
 
-  const addElement = (slideId: string, elementData: Partial<ElementDto>) => {
+  const addElement = async (slideId: string, elementData: Partial<ElementDto>) => {
     const newElement: ElementDto = {
       id: uuidv4(),
       slideId,
@@ -25,12 +27,25 @@ export const useCanvas = () => {
 
     dispatch(updateElementAction({ slideId, element: newElement }));
     
-    // TODO: Send to server via SignalR
-    console.log('Adding element:', newElement);
+    if (isConnected) {
+      try {
+        await signalRService.updateElement(slideId, '', {
+          type: newElement.type,
+          content: newElement.content,
+          positionX: newElement.positionX,
+          positionY: newElement.positionY,
+          width: newElement.width,
+          height: newElement.height,
+          zIndex: newElement.zIndex,
+          properties: newElement.properties,
+        });
+      } catch (error) {
+        console.error('Failed to send element to server:', error);
+      }
+    }
   };
 
-  const updateElement = (slideId: string, elementId: string, updates: Partial<ElementDto>) => {
-    // Find the current element
+  const updateElement = async (slideId: string, elementId: string, updates: Partial<ElementDto>) => {
     const slide = slides.find(s => s.id === slideId);
     const currentElement = slide?.elements.find(e => e.id === elementId);
     
@@ -49,13 +64,34 @@ export const useCanvas = () => {
 
     dispatch(updateElementAction({ slideId, element: updatedElement }));
     
-    console.log('Updating element:', updatedElement);
+    if (isConnected) {
+      try {
+        await signalRService.updateElement(slideId, elementId, {
+          type: updatedElement.type,
+          content: updatedElement.content,
+          positionX: updatedElement.positionX,
+          positionY: updatedElement.positionY,
+          width: updatedElement.width,
+          height: updatedElement.height,
+          zIndex: updatedElement.zIndex,
+          properties: updatedElement.properties,
+        });
+      } catch (error) {
+        console.error('Failed to update element on server:', error);
+      }
+    }
   };
 
-  const deleteElement = (slideId: string, elementId: string) => {
+  const deleteElement = async (slideId: string, elementId: string) => {
     dispatch(removeElement({ slideId, elementId }));
     
-    console.log('Deleting element:', elementId);
+    if (isConnected) {
+      try {
+        await signalRService.deleteElement(elementId);
+      } catch (error) {
+        console.error('Failed to delete element on server:', error);
+      }
+    }
   };
 
   return {

@@ -33,23 +33,55 @@ public class PresentationHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         _logger.LogInformation($"Client disconnected: {Context.ConnectionId}");
-        
+
         var user = await _userSessionService.GetUserByConnectionIdAsync(Context.ConnectionId);
         if (user != null)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, user.Id.ToString());
-            
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, user.PresentationId.ToString());
+
             await _userSessionService.DisconnectUserAsync(Context.ConnectionId);
-            
-            await Clients.Group(user.Id.ToString()).SendAsync("UserDisconnected", user);
+
+            await Clients.Group(user.PresentationId.ToString()).SendAsync("UserDisconnected", user);
+
+            var updatedUsers = await _userSessionService.GetUsersByPresentationIdAsync(user.PresentationId);
+            await Clients.Group(user.PresentationId.ToString()).SendAsync("UsersUpdated", updatedUsers);
         }
 
         await base.OnDisconnectedAsync(exception);
     }
+
     public async Task<HubResponse<ConnectionInfoDto>> JoinPresentation(Guid presentationId, JoinPresentationDto dto)
     {
         try
         {
+            _logger.LogInformation($"JoinPresentation called - PresentationId: {presentationId}, Nickname: {dto.Nickname}, ConnectionId: {Context.ConnectionId}");
+
+            var existingUser = await _userSessionService.GetUserByConnectionIdAsync(Context.ConnectionId);
+            if (existingUser != null)
+            {
+                if (existingUser.PresentationId == presentationId)
+                {
+                    var existingConnectionInfo = new ConnectionInfoDto
+                    {
+                        ConnectionId = Context.ConnectionId,
+                        PresentationId = presentationId,
+                        User = existingUser
+                    };
+
+                    var existingUsers = await _userSessionService.GetUsersByPresentationIdAsync(presentationId);
+                    await Clients.Caller.SendAsync("UsersUpdated", existingUsers);
+
+                    return HubResponse<ConnectionInfoDto>.CreateSuccess(existingConnectionInfo, "Already joined this presentation");
+                }
+
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, existingUser.PresentationId.ToString());
+                await _userSessionService.DisconnectUserAsync(Context.ConnectionId);
+                await Clients.Group(existingUser.PresentationId.ToString()).SendAsync("UserLeft", existingUser);
+
+                var oldPresentationUsers = await _userSessionService.GetUsersByPresentationIdAsync(existingUser.PresentationId);
+                await Clients.Group(existingUser.PresentationId.ToString()).SendAsync("UsersUpdated", oldPresentationUsers);
+            }
+
             var connectionInfo = await _presentationService.JoinPresentationAsync(
                 presentationId, dto, Context.ConnectionId);
 
@@ -62,11 +94,14 @@ public class PresentationHub : Hub
             await Groups.AddToGroupAsync(Context.ConnectionId, presentationId.ToString());
 
             var users = await _userSessionService.GetUsersByPresentationIdAsync(presentationId);
+            _logger.LogInformation($"Active users count: {users.Count()}");
 
             await Clients.OthersInGroup(presentationId.ToString())
                 .SendAsync("UserJoined", connectionInfo.User);
 
-            await Clients.Caller.SendAsync("UsersUpdated", users);
+            await Clients.Group(presentationId.ToString()).SendAsync("UsersUpdated", users);
+
+            _logger.LogInformation("UsersUpdated event sent to all users in group");
 
             return HubResponse<ConnectionInfoDto>.CreateSuccess(connectionInfo, "Successfully joined presentation");
         }
@@ -76,16 +111,21 @@ public class PresentationHub : Hub
             return HubResponse<ConnectionInfoDto>.CreateError("An error occurred while joining the presentation");
         }
     }
+
     public async Task LeavePresentation()
     {
         var user = await _userSessionService.GetUserByConnectionIdAsync(Context.ConnectionId);
         if (user != null)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, user.Id.ToString());
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, user.PresentationId.ToString());
             await _userSessionService.DisconnectUserAsync(Context.ConnectionId);
-            await Clients.OthersInGroup(user.Id.ToString()).SendAsync("UserLeft", user);
+            await Clients.OthersInGroup(user.PresentationId.ToString()).SendAsync("UserLeft", user);
+
+            var updatedUsers = await _userSessionService.GetUsersByPresentationIdAsync(user.PresentationId);
+            await Clients.Group(user.PresentationId.ToString()).SendAsync("UsersUpdated", updatedUsers);
         }
     }
+
     public async Task<HubResponse<ElementDto>> UpdateElement(Guid slideId, ElementUpdateDto updateDto)
     {
         try
@@ -94,7 +134,7 @@ public class PresentationHub : Hub
             if (user == null)
                 return HubResponse<ElementDto>.CreateError("User not found");
 
-            var canEdit = await _presentationService.CanUserEditAsync(user.Id, user.Id.ToString());
+            var canEdit = await _presentationService.CanUserEditAsync(user.PresentationId, user.Id.ToString());
             if (!canEdit)
                 return HubResponse<ElementDto>.CreateError("You don't have permission to edit");
 
@@ -113,7 +153,7 @@ public class PresentationHub : Hub
 
             await _userSessionService.UpdateUserActivityAsync(Context.ConnectionId);
 
-            await Clients.Group(user.Id.ToString()).SendAsync("ElementUpdated", new
+            await Clients.Group(user.PresentationId.ToString()).SendAsync("ElementUpdated", new
             {
                 element,
                 updatedBy = user.Nickname,
@@ -128,6 +168,7 @@ public class PresentationHub : Hub
             return HubResponse<ElementDto>.CreateError("An error occurred while updating the element");
         }
     }
+
     public async Task<HubResponse<bool>> DeleteElement(Guid elementId)
     {
         try
@@ -136,7 +177,7 @@ public class PresentationHub : Hub
             if (user == null)
                 return HubResponse<bool>.CreateError("User not found");
 
-            var canEdit = await _presentationService.CanUserEditAsync(user.Id, user.Id.ToString());
+            var canEdit = await _presentationService.CanUserEditAsync(user.PresentationId, user.Id.ToString());
             if (!canEdit)
                 return HubResponse<bool>.CreateError("You don't have permission to delete");
 
@@ -144,7 +185,7 @@ public class PresentationHub : Hub
             if (!result)
                 return HubResponse<bool>.CreateError("Element not found");
 
-            await Clients.Group(user.Id.ToString()).SendAsync("ElementDeleted", elementId);
+            await Clients.Group(user.PresentationId.ToString()).SendAsync("ElementDeleted", elementId);
 
             return HubResponse<bool>.CreateSuccess(true);
         }
@@ -154,6 +195,7 @@ public class PresentationHub : Hub
             return HubResponse<bool>.CreateError("An error occurred while deleting the element");
         }
     }
+
     public async Task<HubResponse<bool>> ChangeUserRole(ChangeUserRoleDto dto)
     {
         try
@@ -166,9 +208,9 @@ public class PresentationHub : Hub
             if (!result)
                 return HubResponse<bool>.CreateError("Cannot change role. You must be the creator.");
 
-            var users = await _userSessionService.GetUsersByPresentationIdAsync(user.Id);
+            var users = await _userSessionService.GetUsersByPresentationIdAsync(user.PresentationId);
 
-            await Clients.Group(user.Id.ToString()).SendAsync("UsersUpdated", users);
+            await Clients.Group(user.PresentationId.ToString()).SendAsync("UsersUpdated", users);
 
             return HubResponse<bool>.CreateSuccess(true, "Role changed successfully");
         }
@@ -178,6 +220,7 @@ public class PresentationHub : Hub
             return HubResponse<bool>.CreateError("An error occurred while changing the role");
         }
     }
+
     public async Task<HubResponse<SlideDto>> AddSlide(Guid presentationId)
     {
         try
@@ -202,6 +245,7 @@ public class PresentationHub : Hub
             return HubResponse<SlideDto>.CreateError("An error occurred while adding the slide");
         }
     }
+
     public async Task<HubResponse<bool>> DeleteSlide(Guid slideId)
     {
         try
@@ -214,7 +258,7 @@ public class PresentationHub : Hub
             if (!result)
                 return HubResponse<bool>.CreateError("Cannot delete slide. You must be the creator or it's the last slide.");
 
-            await Clients.Group(user.Id.ToString()).SendAsync("SlideDeleted", slideId);
+            await Clients.Group(user.PresentationId.ToString()).SendAsync("SlideDeleted", slideId);
 
             return HubResponse<bool>.CreateSuccess(true);
         }
@@ -223,5 +267,11 @@ public class PresentationHub : Hub
             _logger.LogError(ex, "Error deleting slide");
             return HubResponse<bool>.CreateError("An error occurred while deleting the slide");
         }
+    }
+    
+    public async Task<string> GetConnectionInfo()
+    {
+        var user = await _userSessionService.GetUserByConnectionIdAsync(Context.ConnectionId);
+        return $"ConnectionId: {Context.ConnectionId}, User: {user?.Nickname}, PresentationId: {user?.PresentationId}";
     }
 }

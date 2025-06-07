@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
-import { presentationApi } from '../../services/api';
+import { useSignalR } from '../../hooks/useSignalR';
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ interface JoinModalProps {
 
 const JoinModal: React.FC<JoinModalProps> = ({ isOpen, presentationId, onClose, onSuccess }) => {
   const navigate = useNavigate();
+  const { joinPresentation } = useSignalR();
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,11 +41,25 @@ const JoinModal: React.FC<JoinModalProps> = ({ isOpen, presentationId, onClose, 
     setError(null);
 
     try {
-      await presentationApi.join(presentationId, { nickname: nickname.trim() });
+      await joinPresentation(presentationId, nickname.trim());
+      
+      localStorage.setItem(`presentation_${presentationId}_nickname`, nickname.trim());
+      
       onSuccess();
       navigate(`/presentation/${presentationId}`);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to join presentation');
+      if (error instanceof Error) {
+        if (error.message.includes('nickname')) {
+          setError('This nickname is already in use. Please choose another one.');
+        } else if (error.message.includes('connection')) {
+          setError('Connection failed. Please check your internet connection.');
+        } else {
+          setError(error.message);
+        }
+      } else {
+        setError('Failed to join presentation. Please try again.');
+      }
+      console.error('Join error:', error);
     } finally {
       setIsSubmitting(false);
     }

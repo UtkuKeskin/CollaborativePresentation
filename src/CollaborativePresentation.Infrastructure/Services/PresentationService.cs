@@ -99,10 +99,48 @@ public class PresentationService : IPresentationService
         var presentation = await _unitOfWork.Presentations.GetByIdAsync(presentationId);
         if (presentation == null || !presentation.IsActive) return null;
 
-        if (await _unitOfWork.ActiveUsers.IsNicknameInUseAsync(presentationId, dto.Nickname))
-            return null;
+        var existingUserWithConnection = await _unitOfWork.ActiveUsers.GetByConnectionIdAsync(connectionId);
+        if (existingUserWithConnection != null)
+        {
+            if (existingUserWithConnection.PresentationId == presentationId)
+            {
+                return new ConnectionInfoDto
+                {
+                    ConnectionId = connectionId,
+                    PresentationId = presentationId,
+                    User = _mapper.Map<ActiveUserDto>(existingUserWithConnection)
+                };
+            }
+            else
+            {
+                existingUserWithConnection.IsConnected = false;
+                _unitOfWork.ActiveUsers.Update(existingUserWithConnection);
+                await _unitOfWork.SaveChangesAsync();
+            }
+        }
 
-        var isCreator = presentation.CreatorNickname == dto.Nickname;
+        var existingUserWithNickname = await _unitOfWork.ActiveUsers
+            .FirstOrDefaultAsync(u => u.PresentationId == presentationId &&
+                                     u.Nickname.ToLower() == dto.Nickname.ToLower() &&
+                                     u.IsConnected);
+
+        if (existingUserWithNickname != null)
+        {
+            existingUserWithNickname.ConnectionId = connectionId;
+            existingUserWithNickname.LastActivityAt = DateTime.UtcNow;
+            _unitOfWork.ActiveUsers.Update(existingUserWithNickname);
+            await _unitOfWork.SaveChangesAsync();
+
+            return new ConnectionInfoDto
+            {
+                ConnectionId = connectionId,
+                PresentationId = presentationId,
+                User = _mapper.Map<ActiveUserDto>(existingUserWithNickname)
+            };
+        }
+
+        var isCreator = presentation.CreatorNickname.Equals(dto.Nickname, StringComparison.OrdinalIgnoreCase);
+
         var user = new ActiveUser
         {
             PresentationId = presentationId,

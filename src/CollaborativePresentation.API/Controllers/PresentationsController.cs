@@ -43,15 +43,6 @@ public class PresentationsController : BaseApiController
     [HttpPost("{id}/join")]
     public async Task<ActionResult<ConnectionInfoDto>> Join(Guid id, [FromBody] JoinPresentationDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var connectionId = Guid.NewGuid().ToString();
-        var connectionInfo = await _presentationService.JoinPresentationAsync(id, dto, connectionId);
-        
-        if (connectionInfo == null)
-            return BadRequest("Cannot join presentation. Nickname may be in use or presentation not found.");
-
-        return Ok(connectionInfo);
+        return await Task.FromResult(BadRequest("Please use SignalR connection to join presentations"));
     }
 }

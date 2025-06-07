@@ -28,6 +28,7 @@ public class MappingProfile : Profile
         CreateMap<Element, ElementDto>();
         CreateMap<CreateUpdateElementDto, Element>();
         
-        CreateMap<ActiveUser, ActiveUserDto>();
+        CreateMap<ActiveUser, ActiveUserDto>()
+            .ForMember(dest => dest.PresentationId, opt => opt.MapFrom(src => src.PresentationId));
     }
 }

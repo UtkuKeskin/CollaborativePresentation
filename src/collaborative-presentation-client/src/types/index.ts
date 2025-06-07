@@ -1,8 +1,8 @@
 // Enums
-export enum UserRole {
-    Viewer = 'Viewer',
-    Editor = 'Editor',
-    Creator = 'Creator'
+  export enum UserRole {
+    Viewer = 0,
+    Editor = 1,
+    Creator = 2
   }
   
   export enum ElementType {
