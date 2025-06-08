@@ -10,6 +10,7 @@ interface TextElementProps {
   onChange: (attrs: Partial<ElementDto>) => void;
   onDelete: () => void;
   scale: number;
+  isEditable?: boolean;
 }
 
 const TextElement: React.FC<TextElementProps> = ({
@@ -19,6 +20,7 @@ const TextElement: React.FC<TextElementProps> = ({
   onChange,
   onDelete,
   scale,
+  isEditable = true,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(element.content);
@@ -38,6 +40,8 @@ const TextElement: React.FC<TextElementProps> = ({
   }, [element.content]);
 
   const handleDblClick = () => {
+    if (!isEditable) return;
+    
     setIsEditing(true);
     const textNode = textRef.current;
     const groupNode = groupRef.current;
@@ -183,7 +187,7 @@ const TextElement: React.FC<TextElementProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isSelected && (e.key === 'Delete' || e.key === 'Backspace') && !isEditing) {
+      if (isSelected && (e.key === 'Delete' || e.key === 'Backspace') && !isEditing && isEditable) {
         e.preventDefault();
         onDelete();
       }
@@ -193,7 +197,7 @@ const TextElement: React.FC<TextElementProps> = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isSelected, isEditing, onDelete]);
+  }, [isSelected, isEditing, onDelete, isEditable]);
 
   const parseMarkdown = (markdown: string): { text: string; fontStyle?: string; fontWeight?: string; fontSize?: number } => {
     let processedText = markdown;
@@ -244,7 +248,7 @@ const TextElement: React.FC<TextElementProps> = ({
         y={element.positionY}
         width={element.width}
         height={element.height}
-        draggable
+        draggable={isEditable}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
         onClick={onSelect}
@@ -256,10 +260,10 @@ const TextElement: React.FC<TextElementProps> = ({
         <Rect
           width={element.width}
           height={element.height}
-          fill={isSelected ? 'rgba(66, 153, 225, 0.1)' : 'transparent'}
-          stroke={isSelected ? '#4299e1' : 'transparent'}
+          fill={isSelected && isEditable ? 'rgba(66, 153, 225, 0.1)' : 'transparent'}
+          stroke={isSelected && isEditable ? '#4299e1' : 'transparent'}
           strokeWidth={1}
-          dash={isSelected ? [5, 5] : []}
+          dash={isSelected && isEditable ? [5, 5] : []}
         />
         
         <Text
@@ -279,7 +283,7 @@ const TextElement: React.FC<TextElementProps> = ({
         />
       </Group>
       
-      {isSelected && !isEditing && (
+      {isSelected && !isEditing && isEditable && (
         <Transformer
           ref={transformerRef}
           enabledAnchors={[

@@ -2,8 +2,10 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Stage, Layer, Rect } from 'react-konva';
 import Konva from 'konva';
 import { useCanvas } from '../../hooks/useCanvas';
-import { SlideDto, ElementDto, ElementType } from '../../types';
+import { SlideDto, ElementDto, ElementType, UserRole } from '../../types';
 import TextElement from './Elements/TextElement';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 
 interface CanvasProps {
   slide: SlideDto;
@@ -18,6 +20,9 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const { addElement, updateElement, deleteElement } = useCanvas();
+  
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const canEdit = currentUser?.role === UserRole.Creator || currentUser?.role === UserRole.Editor;
 
   useEffect(() => {
     console.log('🖼️ Canvas received new slide data:', {
@@ -63,7 +68,7 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
   }, []);
 
   const handleStageDoubleClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (!isEditable) return;
+    if (!isEditable || !canEdit) return;
 
     const stage = e.target.getStage();
     if (!stage) return;
@@ -92,20 +97,24 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
 
       addElement(slide.id, newElement);
     }
-  }, [isEditable, scale, slide.id, slide.elements.length, addElement]);
+  }, [isEditable, canEdit, scale, slide.id, slide.elements.length, addElement]);
 
   const handleSelect = useCallback((id: string) => {
-    setSelectedId(id);
-  }, []);
+    if (canEdit) {
+      setSelectedId(id);
+    }
+  }, [canEdit]);
 
   const handleElementChange = useCallback((id: string, attrs: Partial<ElementDto>) => {
+    if (!canEdit) return;
     updateElement(slide.id, id, attrs);
-  }, [slide.id, updateElement]);
+  }, [slide.id, updateElement, canEdit]);
 
   const handleElementDelete = useCallback((id: string) => {
+    if (!canEdit) return;
     deleteElement(slide.id, id);
     setSelectedId(null);
-  }, [slide.id, deleteElement]);
+  }, [slide.id, deleteElement, canEdit]);
 
   const handleStageClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     const clickedOnEmpty = e.target === e.target.getStage() || 
@@ -117,7 +126,7 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && isEditable) {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && isEditable && canEdit) {
         const element = slide.elements.find(el => el.id === selectedId);
         if (element) {
           handleElementDelete(selectedId);
@@ -133,7 +142,7 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedId, isEditable, slide.elements, handleElementDelete]);
+  }, [selectedId, isEditable, canEdit, slide.elements, handleElementDelete]);
 
   return (
     <div 
@@ -141,9 +150,16 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
       className="w-full h-full flex items-center justify-center bg-gray-100"
     >
       <div 
-        className="bg-white shadow-2xl rounded-lg overflow-hidden"
+        className="bg-white shadow-2xl rounded-lg overflow-hidden relative"
         style={{ width: dimensions.width, height: dimensions.height }}
       >
+        {/* Viewer info message */}
+        {!canEdit && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-gray-800 bg-opacity-75 text-white px-4 py-2 rounded-md text-sm">
+            View Only Mode
+          </div>
+        )}
+        
         <Stage
           ref={stageRef}
           width={dimensions.width}
@@ -179,6 +195,7 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
                         onChange={(attrs) => handleElementChange(element.id, attrs)}
                         onDelete={() => handleElementDelete(element.id)}
                         scale={scale}
+                        isEditable={canEdit}
                       />
                     );
                   case ElementType.Shape:

@@ -78,43 +78,58 @@ class SignalRService {
     });
 
     this.connection.on('UsersUpdated', (users: ActiveUserDto[]) => {
-        console.log('🔄 UsersUpdated event received:', {
-          timestamp: new Date().toISOString(),
-          userCount: users.length,
-          users: users.map(u => ({ id: u.id, nickname: u.nickname, isConnected: u.isConnected }))
-        });
-        store.dispatch(setConnectedUsers(users));
+      console.log('🔄 UsersUpdated event received:', {
+        timestamp: new Date().toISOString(),
+        userCount: users.length,
+        users: users.map(u => ({ id: u.id, nickname: u.nickname, role: u.role, isConnected: u.isConnected }))
       });
       
-      this.connection.on('UserJoined', (user: ActiveUserDto) => {
-        console.log('➕ UserJoined event received:', {
-          timestamp: new Date().toISOString(),
-          user: { id: user.id, nickname: user.nickname }
-        });
-        store.dispatch(addConnectedUser(user));
+      store.dispatch(setConnectedUsers(users));
+      
+      const state = store.getState();
+      const currentUserId = state.user.currentUser?.id;
+      
+      if (currentUserId) {
+        const updatedCurrentUser = users.find(u => u.id === currentUserId);
+        if (updatedCurrentUser) {
+          console.log('📝 Updating current user role:', {
+            oldRole: state.user.currentUser?.role,
+            newRole: updatedCurrentUser.role
+          });
+          store.dispatch(setCurrentUser(updatedCurrentUser));
+        }
+      }
+    });
+      
+    this.connection.on('UserJoined', (user: ActiveUserDto) => {
+      console.log('➕ UserJoined event received:', {
+        timestamp: new Date().toISOString(),
+        user: { id: user.id, nickname: user.nickname }
       });
+      store.dispatch(addConnectedUser(user));
+    });
 
-      this.connection.on('ElementUpdated', (data: { element: ElementDto; updatedBy: string; slideId: string }) => {
-        console.log('🔴 ElementUpdated event received:', {
-          elementId: data.element.id,
-          slideId: data.slideId,
-          updatedBy: data.updatedBy,
-          element: data.element
-        });
-      
-        const clonedElement = JSON.parse(JSON.stringify(data.element));
-      
-        console.log('🟡 Dispatching updateElement with cloned element...');
-        store.dispatch(updateElement({ slideId: data.slideId, element: clonedElement }));
-      
-        const state = store.getState();
-        const slide = state.presentation.slides.find(s => s.id === data.slideId);
-        console.log('🟢 Store state after dispatch:', {
-          slideFound: !!slide,
-          elementCount: slide?.elements?.length || 0,
-          elements: slide?.elements
-        });
+    this.connection.on('ElementUpdated', (data: { element: ElementDto; updatedBy: string; slideId: string }) => {
+      console.log('🔴 ElementUpdated event received:', {
+        elementId: data.element.id,
+        slideId: data.slideId,
+        updatedBy: data.updatedBy,
+        element: data.element
       });
+    
+      const clonedElement = JSON.parse(JSON.stringify(data.element));
+    
+      console.log('🟡 Dispatching updateElement with cloned element...');
+      store.dispatch(updateElement({ slideId: data.slideId, element: clonedElement }));
+    
+      const state = store.getState();
+      const slide = state.presentation.slides.find(s => s.id === data.slideId);
+      console.log('🟢 Store state after dispatch:', {
+        slideFound: !!slide,
+        elementCount: slide?.elements?.length || 0,
+        elements: slide?.elements
+      });
+    });
 
     this.connection.on('ElementDeleted', (elementId: string) => {
       console.log('Element deleted:', elementId);
@@ -292,9 +307,12 @@ class SignalRService {
     if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
       throw new Error('SignalR connection not established');
     }
-
+  
     try {
-      const response = await this.connection.invoke('ChangeUserRole', { userId, newRole });
+      const response = await this.connection.invoke('ChangeUserRole', { 
+        userId, 
+        newRole: parseInt(newRole)
+      });
       
       if (!response.success) {
         throw new Error(response.message || 'Failed to change user role');

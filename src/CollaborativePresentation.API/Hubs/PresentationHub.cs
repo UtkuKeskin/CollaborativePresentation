@@ -251,13 +251,11 @@ public class PresentationHub : Hub
             if (user == null)
                 return HubResponse<SlideDto>.CreateError("User not found");
 
-            // Sadece Creator slide ekleyebilir
             if (user.Role != UserRole.Creator)
                 return HubResponse<SlideDto>.CreateError("Only the creator can add slides");
 
             var slide = await _presentationService.AddSlideAsync(presentationId);
 
-            // Tüm kullanıcılara yeni slide'ı bildir
             await Clients.Group(presentationId.ToString()).SendAsync("SlideAdded", slide);
 
             return HubResponse<SlideDto>.CreateSuccess(slide);
@@ -281,7 +279,6 @@ public class PresentationHub : Hub
             if (!result)
                 return HubResponse<bool>.CreateError("Cannot delete slide. You must be the creator or it's the last slide.");
 
-            // Tüm kullanıcılara slide silindiğini bildir
             await Clients.Group(user.PresentationId.ToString()).SendAsync("SlideDeleted", slideId);
 
             return HubResponse<bool>.CreateSuccess(true);

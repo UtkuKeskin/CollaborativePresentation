@@ -80,3 +80,8 @@ export enum ElementType {
     presentationId: string;
     user: ActiveUserDto;
   }
+
+  export interface ChangeUserRoleDto {
+    userId: string;
+    newRole: UserRole;
+  }
