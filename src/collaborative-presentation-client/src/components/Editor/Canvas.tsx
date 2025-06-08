@@ -4,6 +4,7 @@ import Konva from 'konva';
 import { useCanvas } from '../../hooks/useCanvas';
 import { SlideDto, ElementDto, ElementType, UserRole } from '../../types';
 import TextElement from './Elements/TextElement';
+import ShapeElement from './Elements/ShapeElement';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 
@@ -94,7 +95,7 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
         positionY: y - 40,
         width: 200,
         height: 80,
-        zIndex: slide.elements.length,
+        zIndex: slide.elements.length + 1,
       };
 
       addElement(slide.id, newElement);
@@ -201,9 +202,21 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
                       />
                     );
                   case ElementType.Shape:
+                  case ElementType.Arrow:
+                    return (
+                      <ShapeElement
+                        key={element.id}
+                        element={element}
+                        isSelected={selectedId === element.id}
+                        onSelect={() => handleSelect(element.id)}
+                        onChange={(attrs) => handleElementChange(element.id, attrs)}
+                        onDelete={() => handleElementDelete(element.id)}
+                        scale={scale}
+                        isEditable={canEdit}
+                      />
+                    );
                   case ElementType.Image:
                   case ElementType.Line:
-                  case ElementType.Arrow:
                     return null;
                   default:
                     return null;
