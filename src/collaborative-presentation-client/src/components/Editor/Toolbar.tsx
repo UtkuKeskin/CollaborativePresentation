@@ -44,7 +44,6 @@ const Toolbar: React.FC = () => {
 
     setActiveTool(tool);
     
-    // Get canvas center position
     const centerX = 512 - 100; // Canvas center minus half of default width
     const centerY = 288 - 50;  // Canvas center minus half of default height
     

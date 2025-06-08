@@ -26,7 +26,6 @@ const ShapeElement: React.FC<ShapeElementProps> = ({
   const transformerRef = useRef<Konva.Transformer>(null);
   const groupRef = useRef<Konva.Group>(null);
 
-  // Parse properties for color and other attributes
   const properties = element.properties ? JSON.parse(element.properties) : {};
   const fill = properties.fill || '#4299e1';
   const stroke = properties.stroke || '#2563eb';
@@ -68,7 +67,6 @@ const ShapeElement: React.FC<ShapeElementProps> = ({
   const renderShape = () => {
     switch (element.type) {
       case ElementType.Shape:
-        // Default to rectangle if no specific shape is defined
         const shapeType = properties.shapeType || 'rectangle';
         
         if (shapeType === 'circle') {
