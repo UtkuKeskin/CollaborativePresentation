@@ -60,17 +60,23 @@ public static class ServiceExtensions
                         "http://localhost:3000",
                         "http://localhost:3001",
                         "https://localhost:3000",
-                        "https://localhost:3001"
+                        "https://localhost:3001",
+                        "https://collaborative-presentation-mqpapxzgs-utku-keskins-projects.vercel.app",
+                        "https://collaborative-presentation-mlle8r6ll-utku-keskins-projects.vercel.app",
+                        "https://collaborative-presentation-client.vercel.app",
+                        "https://*.vercel.app"
                     )
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowCredentials());
+                    .AllowCredentials()
+                    .SetIsOriginAllowedToAllowWildcardSubdomains());
 
             options.AddPolicy("AllowAll",
                 builder => builder
-                    .AllowAnyOrigin()
+                    .SetIsOriginAllowed(_ => true)
                     .AllowAnyMethod()
-                    .AllowAnyHeader());
+                    .AllowAnyHeader()
+                    .AllowCredentials());
         });
 
         return services;
