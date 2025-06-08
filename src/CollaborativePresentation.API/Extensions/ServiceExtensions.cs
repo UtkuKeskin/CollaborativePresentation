@@ -56,20 +56,23 @@ public static class ServiceExtensions
         {
             options.AddPolicy("AllowReactApp",
                 builder => builder
-                    .WithOrigins(
-                        "http://localhost:3000",
-                        "http://localhost:3001",
-                        "https://localhost:3000",
-                        "https://localhost:3001",
-                        "https://collaborative-presentation-mqpapxzgs-utku-keskins-projects.vercel.app",
-                        "https://collaborative-presentation-mlle8r6ll-utku-keskins-projects.vercel.app",
-                        "https://collaborative-presentation-client.vercel.app",
-                        "https://*.vercel.app"
-                    )
+                    .SetIsOriginAllowed(origin => 
+                    {
+                        if (origin.Contains("localhost")) return true;
+                        
+                        if (origin.Contains(".vercel.app")) return true;
+                        
+                        var allowedOrigins = new[] 
+                        {
+                            "https://collaborative-presentation-client.vercel.app",
+                            "https://collaborative-api.onrender.com"
+                        };
+                        
+                        return allowedOrigins.Contains(origin);
+                    })
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowCredentials()
-                    .SetIsOriginAllowedToAllowWildcardSubdomains());
+                    .AllowCredentials());
 
             options.AddPolicy("AllowAll",
                 builder => builder
