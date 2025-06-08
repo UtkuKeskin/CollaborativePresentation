@@ -1,9 +1,0 @@
-Dockerfile
-Dockerfile.*
-docker-compose.yml
-docker-compose.*.yml
-.dockerignore
-deployment/Dockerfile.api
-deployment/Dockerfile.client
-**/Dockerfile
-**/Dockerfile.*
