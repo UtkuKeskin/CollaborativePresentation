@@ -170,6 +170,19 @@ const Editor: React.FC = () => {
     return () => clearInterval(checkConnection);
   }, [id, currentUser, joinPresentation]);
 
+  // F5 to start presentation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F5') {
+        e.preventDefault();
+        navigate(`/presentation/${id}/present`);
+      }
+    };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [id, navigate]);
+
   if (!isReady || isInitializing || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
