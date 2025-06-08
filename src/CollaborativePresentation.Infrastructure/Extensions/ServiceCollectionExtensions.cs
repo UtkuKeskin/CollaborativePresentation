@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPresentationService, PresentationService>();
         services.AddScoped<IUserSessionService, UserSessionService>();
         services.AddScoped<IElementSyncService, ElementSyncService>();
+        services.AddScoped<IPdfService, PdfService>();
         
         // Register AutoMapper
         services.AddAutoMapper(typeof(ServiceCollectionExtensions).Assembly);

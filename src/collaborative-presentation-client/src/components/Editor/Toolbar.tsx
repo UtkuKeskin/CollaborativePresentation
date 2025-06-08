@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Type, Square, Circle, ArrowRight, Presentation, Palette } from 'lucide-react';
+import { Type, Square, Circle, ArrowRight, Presentation, Palette, Download } from 'lucide-react';
 import { useCanvas } from '../../hooks/useCanvas';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { ElementType, UserRole } from '../../types';
+import { toastService } from '../../services/toastService';
 
 const Toolbar: React.FC = () => {
   const navigate = useNavigate();
@@ -110,13 +111,41 @@ const Toolbar: React.FC = () => {
         break;
     }
     
-    // Reset active tool after creation
     setTimeout(() => setActiveTool(null), 100);
   };
 
   const handleColorSelect = (color: string) => {
     setSelectedColor(color);
     setShowColorPicker(false);
+  };
+
+  const handleExportPdf = async () => {
+    if (!id) return;
+    
+    try {
+      toastService.info('Generating PDF...');
+      
+      const response = await fetch(`http://localhost:5167/api/export/presentation/${id}/pdf`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `presentation_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toastService.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toastService.error('Failed to export PDF');
+    }
   };
 
   return (
@@ -232,6 +261,16 @@ const Toolbar: React.FC = () => {
         
         {/* Spacer */}
         <div className="flex-1" />
+        
+        {/* Export PDF Button */}
+        <button 
+          onClick={handleExportPdf}
+          className="p-2 hover:bg-gray-100 rounded-md flex items-center gap-2 text-sm font-medium" 
+          title="Export to PDF"
+        >
+          <Download className="w-5 h-5" />
+          <span>PDF</span>
+        </button>
         
         {/* Present Button */}
         <button 

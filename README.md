@@ -12,13 +12,13 @@ Real-time collaborative presentation software built with .NET Core and React.
 - **Persistent Storage** - All changes are saved automatically
 
 ### Optional Features (Implemented)
-- [ ] Delete elements functionality
-- [ ] Multiple shapes (rectangle, circle, arrow) with colors
+- [x] Delete elements functionality
+- [x] Multiple shapes (rectangle, circle, arrow) with colors
 - [ ] Image support
 - [ ] Zoom in/out functionality
 - [ ] Thumbnail preview in presentation list
 - [ ] Animations and transitions
-- [ ] Export to PDF
+- [x] Export to PDF
 
 ## 🛠️ Technology Stack
 
@@ -26,10 +26,11 @@ Real-time collaborative presentation software built with .NET Core and React.
 - ASP.NET Core 8.0
 - Entity Framework Core
 - SignalR
-- PostgreSQL/SQL Server
+- PostgreSQL
+- QuestPDF for PDF generation
 
 ### Frontend
-- React with TypeScript
+- React 19 with TypeScript
 - Redux Toolkit
 - Konva.js for canvas manipulation
 - SignalR client
@@ -39,7 +40,7 @@ Real-time collaborative presentation software built with .NET Core and React.
 
 - .NET 8.0 SDK
 - Node.js 18+ and npm
-- PostgreSQL or SQL Server
+- PostgreSQL
 - Docker (optional)
 
 ## 🏃‍♂️ Getting Started
@@ -60,7 +61,7 @@ dotnet run
 
 ### Frontend Setup
 ```bash
-cd src/CollaborativePresentation.Client
+cd src/collaborative-presentation-client
 npm install
 npm start
 ```
@@ -91,7 +92,7 @@ Update the connection string in `appsettings.json`:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Your connection string here"
+    "DefaultConnection": "Host=localhost;Database=CollaborativePresentationDb;Username=postgres;Password=postgres123"
   }
 }
 ```
@@ -99,9 +100,27 @@ Update the connection string in `appsettings.json`:
 ### Environment Variables
 Create `.env` file in the client directory:
 ```
-REACT_APP_API_URL=http://localhost:5000
-REACT_APP_SIGNALR_URL=http://localhost:5000/presentationHub
+REACT_APP_API_URL=http://localhost:5167
+REACT_APP_SIGNALR_URL=http://localhost:5167/presentationHub
 ```
+
+## 🎨 Key Features Implementation
+
+### Shape Tools
+- Rectangle, Circle, and Arrow drawing tools
+- Color picker for customizing shapes
+- Drag and drop functionality
+- Resize and delete operations
+
+### PDF Export
+- Export presentations to PDF format
+- Preserves text content and shape information
+- Download directly from the toolbar
+
+### Real-time Collaboration
+- WebSocket-based real-time updates
+- User presence indicators
+- Role-based permissions
 
 ## 🧪 Testing
 
@@ -113,7 +132,7 @@ dotnet test
 
 ### Run Frontend Tests
 ```bash
-cd src/CollaborativePresentation.Client
+cd src/collaborative-presentation-client
 npm test
 ```
 
@@ -146,11 +165,12 @@ This project is created for educational purposes as part of Itransition internsh
 ## 👤 Author
 
 **Tayyar Utku Keskin**
-- GitHub: [@UtkuKeskin](https://github.com/UtkuKeskin/CollaborativePresentation)
+- GitHub: [@UtkuKeskin](https://github.com/yourusername/CollaborativePresentation)
 - Email: tayyarutkukeskin@gmail.com
 
 ## 🙏 Acknowledgments
 
 - Built as Task #6 for .NET internship program
+- Itransition Intern Developer Training
 
 ---
