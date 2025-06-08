@@ -1,16 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { PresentationListDto } from '../../types';
 import { ArrowUpDown, ArrowUp, ArrowDown, Search, Users } from 'lucide-react';
+import Skeleton from '../Skeleton';
 
 interface PresentationTableProps {
   presentations: PresentationListDto[];
   onJoinClick: (id: string) => void;
+  isLoading?: boolean;
 }
 
 type SortField = 'title' | 'creatorNickname' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
-const PresentationTable: React.FC<PresentationTableProps> = ({ presentations, onJoinClick }) => {
+const PresentationTable: React.FC<PresentationTableProps> = ({ presentations, onJoinClick, isLoading = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -134,13 +136,26 @@ const PresentationTable: React.FC<PresentationTableProps> = ({ presentations, on
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredAndSortedPresentations.length === 0 ? (
+            {isLoading ? (
+              // Skeleton rows
+              Array.from({ length: 5 }, (_, i) => (
+                <tr key={i}>
+                  <td className="px-6 py-4"><Skeleton /></td>
+                  <td className="px-6 py-4"><Skeleton width="100px" /></td>
+                  <td className="px-6 py-4"><Skeleton width="80px" /></td>
+                  <td className="px-6 py-4"><Skeleton width="60px" /></td>
+                  <td className="px-6 py-4"><Skeleton width="40px" /></td>
+                </tr>
+              ))
+            ) : filteredAndSortedPresentations.length === 0 ? (
+              // Empty state
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                   {searchTerm ? 'No presentations found matching your search.' : 'No presentations available.'}
                 </td>
               </tr>
             ) : (
+              // Actual data
               filteredAndSortedPresentations.map((presentation) => (
                 <tr
                   key={presentation.id}

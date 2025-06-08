@@ -4,6 +4,7 @@ import { RootState } from '../../store';
 import { Users, Crown, Edit, Eye, MoreVertical, X, Check } from 'lucide-react';
 import { UserRole } from '../../types';
 import { useSignalR } from '../../hooks/useSignalR';
+import { toastService } from '../../services/toastService';
 
 const UsersPanel: React.FC = () => {
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
@@ -59,9 +60,10 @@ const UsersPanel: React.FC = () => {
     try {
       await changeUserRole(userId, newRole.toString());
       setShowRoleMenu(null);
+      toastService.success(`User role changed to ${getRoleName(newRole)}`);
     } catch (error) {
       console.error('Failed to change user role:', error);
-      alert('Failed to change user role. You must be the creator.');
+      toastService.error('Failed to change user role. You must be the creator.');
     } finally {
       setChangingRole(null);
     }

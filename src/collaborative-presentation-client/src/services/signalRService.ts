@@ -15,6 +15,7 @@ import {
   removeSlide 
 } from '../store/presentationSlice';
 import { ElementDto, ActiveUserDto, SlideDto } from '../types';
+import { toastService } from './toastService';
 
 class SignalRService {
   private connection: signalR.HubConnection | null = null;
@@ -56,11 +57,13 @@ class SignalRService {
     this.connection.onreconnected(() => {
       console.log('SignalR: Reconnected');
       store.dispatch(setConnectionStatus(true));
+      toastService.success('Connection restored');
     });
 
     this.connection.onclose(() => {
       console.log('SignalR: Connection closed');
       store.dispatch(setConnectionStatus(false));
+      toastService.error('Connection lost. Attempting to reconnect...');
       
       if (!this.isIntentionalDisconnect) {
         this.startReconnectTimer();

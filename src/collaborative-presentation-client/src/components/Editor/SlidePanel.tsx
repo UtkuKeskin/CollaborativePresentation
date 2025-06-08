@@ -5,6 +5,7 @@ import { setCurrentSlide } from '../../store/presentationSlice';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { UserRole } from '../../types';
 import { useSignalR } from '../../hooks/useSignalR';
+import { toastService } from '../../services/toastService';
 
 const SlidePanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -32,12 +33,14 @@ const SlidePanel: React.FC = () => {
 
   const handleAddSlide = async () => {
     if (!currentPresentation || !canManageSlides || !isConnected || isAddingSlide) return;
-
+  
     setIsAddingSlide(true);
     try {
       await addSlide(currentPresentation.id);
+      toastService.success('New slide added');
     } catch (error) {
       console.error('Failed to add slide:', error);
+      toastService.error('Failed to add slide');
     } finally {
       setIsAddingSlide(false);
     }
@@ -47,16 +50,17 @@ const SlidePanel: React.FC = () => {
     e.stopPropagation();
     
     if (!canManageSlides || !isConnected || slides.length <= 1) return;
-
+  
     const confirmDelete = window.confirm('Are you sure you want to delete this slide?');
     if (!confirmDelete) return;
-
+  
     setDeletingSlideId(slideId);
     try {
       await deleteSlide(slideId);
+      toastService.success('Slide deleted');
     } catch (error) {
       console.error('Failed to delete slide:', error);
-      alert(error instanceof Error ? error.message : 'Failed to delete slide');
+      toastService.error(error instanceof Error ? error.message : 'Failed to delete slide');
     } finally {
       setDeletingSlideId(null);
     }

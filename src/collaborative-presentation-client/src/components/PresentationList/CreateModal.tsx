@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { presentationApi } from '../../services/api';
 import { useSignalR } from '../../hooks/useSignalR';
 import { CreatePresentationDto } from '../../types';
+import { toastService } from '../../services/toastService';
 
 interface CreateModalProps {
   isOpen: boolean;
@@ -63,7 +64,9 @@ const CreateModal: React.FC<CreateModalProps> = ({ isOpen, onClose, onSuccess })
       
       navigate(`/presentation/${presentation.id}`);
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'Failed to create presentation');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create presentation';
+      toastService.error(errorMessage);
+      setApiError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

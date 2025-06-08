@@ -24,13 +24,15 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const canEdit = currentUser?.role === UserRole.Creator || currentUser?.role === UserRole.Editor;
 
+  const slideElementsLength = slide.elements?.length || 0;
+
   useEffect(() => {
     console.log('🖼️ Canvas received new slide data:', {
       slideId: slide.id,
-      elementCount: slide.elements?.length || 0,
+      elementCount: slideElementsLength,
       elements: slide.elements
     });
-  }, [slide.id, JSON.stringify(slide.elements)]);
+  }, [slide.id, slideElementsLength, slide.elements]);
 
   useEffect(() => {
     const updateDimensions = () => {

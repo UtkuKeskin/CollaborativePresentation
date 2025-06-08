@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useSignalR } from '../../hooks/useSignalR';
+import { toastService } from '../../services/toastService';
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ const JoinModal: React.FC<JoinModalProps> = ({ isOpen, presentationId, onClose, 
       await joinPresentation(presentationId, nickname.trim());
       
       localStorage.setItem(`presentation_${presentationId}_nickname`, nickname.trim());
+      toastService.success(`Joined as ${nickname.trim()}`);
       
       onSuccess();
       navigate(`/presentation/${presentationId}`);

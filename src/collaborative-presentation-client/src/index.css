@@ -2,50 +2,168 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-/* Slide panel animations */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
+/* Global Styles */
+@layer base {
+  * {
+    @apply box-border;
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+  
+  body {
+    @apply m-0 antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+      monospace;
   }
 }
 
-.slide-enter {
-  animation: slideIn 0.3s ease-out;
+/* Custom Animations */
+@layer utilities {
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  .slide-enter {
+    animation: slideIn 0.3s ease-out;
+  }
 }
 
-/* Custom scrollbar for slide panel */
-.slide-panel-scroll::-webkit-scrollbar {
-  width: 6px;
+/* Custom Scrollbars */
+@layer components {
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded-full hover:bg-gray-500 transition-colors;
+  }
+
+  /* Slide panel scrollbar */
+  .slide-panel-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .slide-panel-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  .slide-panel-scroll::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+  }
+
+  .slide-panel-scroll::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  /* Users panel scrollbar */
+  .users-panel-scroll::-webkit-scrollbar {
+    @apply w-1;
+  }
+
+  .users-panel-scroll::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .users-panel-scroll::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+
+  .users-panel-scroll::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
 }
 
-.slide-panel-scroll::-webkit-scrollbar-track {
-  background: #f1f1f1;
+/* Toast Overrides */
+.Toastify__toast {
+  @apply font-sans;
 }
 
-.slide-panel-scroll::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
+.Toastify__toast--success {
+  @apply bg-green-50 text-green-900;
 }
 
-.slide-panel-scroll::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.Toastify__toast--error {
+  @apply bg-red-50 text-red-900;
+}
+
+.Toastify__toast--info {
+  @apply bg-blue-50 text-blue-900;
+}
+
+.Toastify__toast--warning {
+  @apply bg-yellow-50 text-yellow-900;
+}
+
+/* Smooth Transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Focus Styles */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Disable transitions for prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

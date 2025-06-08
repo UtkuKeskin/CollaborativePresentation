@@ -41,15 +41,16 @@ const Editor: React.FC = () => {
   }, [slides]);
 
   const currentSlide = slides.find(s => s.id === currentSlideId);
-  
+  const currentSlideElementsLength = currentSlide?.elements?.length || 0;
+
   useEffect(() => {
     console.log('📝 Editor - Current slide state:', {
       hasSlide: !!currentSlide,
       slideId: currentSlide?.id,
-      elementCount: currentSlide?.elements?.length || 0,
+      elementCount: currentSlideElementsLength,
       elements: currentSlide?.elements
     });
-  }, [currentSlide?.elements?.length]);
+  }, [currentSlide, currentSlideElementsLength]);
 
   useEffect(() => {
     if (!id) {
