@@ -17,6 +17,7 @@ const Editor: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isReady, setIsReady] = useState(false);
   
   const { joinPresentation, leavePresentation } = useSignalR();
 
@@ -29,14 +30,45 @@ const Editor: React.FC = () => {
   const isConnected = useSelector((state: RootState) => state.user.isConnected);
 
   useEffect(() => {
+    console.log('📊 Slides updated:', {
+      slideCount: slides.length,
+      slides: slides.map(s => ({
+        id: s.id,
+        elementCount: s.elements?.length || 0,
+        elements: s.elements
+      }))
+    });
+  }, [slides]);
+
+  const currentSlide = slides.find(s => s.id === currentSlideId);
+  
+  useEffect(() => {
+    console.log('📝 Editor - Current slide state:', {
+      hasSlide: !!currentSlide,
+      slideId: currentSlide?.id,
+      elementCount: currentSlide?.elements?.length || 0,
+      elements: currentSlide?.elements
+    });
+  }, [currentSlide?.elements?.length]);
+
+  useEffect(() => {
     if (!id) {
       navigate('/');
       return;
     }
 
+    const INIT_TIMEOUT = 15000;
+    let timeoutId: NodeJS.Timeout;
+
     const initializePresentation = async () => {
       try {
         dispatch(setLoading(true));
+        
+        timeoutId = setTimeout(() => {
+          dispatch(setError('Connection timeout. Please refresh the page.'));
+          setIsInitializing(false);
+          navigate('/');
+        }, INIT_TIMEOUT);
         
         const presentationData = await presentationApi.getById(id);
         dispatch(setPresentation(presentationData));
@@ -76,6 +108,10 @@ const Editor: React.FC = () => {
           try {
             console.log('Auto-joining with stored nickname:', storedNickname);
             await joinPresentation(id, storedNickname);
+            
+            setIsReady(true);
+            console.log('Presentation is ready for interaction');
+            
           } catch (error: any) {
             console.error('Failed to auto-join presentation:', error);
             
@@ -93,10 +129,13 @@ const Editor: React.FC = () => {
         }
 
         setIsInitializing(false);
+        clearTimeout(timeoutId);
+        
       } catch (err) {
         console.error('Error loading presentation:', err);
         dispatch(setError('Failed to load presentation'));
         setIsInitializing(false);
+        clearTimeout(timeoutId);
       } finally {
         dispatch(setLoading(false));
       }
@@ -106,33 +145,43 @@ const Editor: React.FC = () => {
 
     return () => {
       console.log('Editor cleanup: leaving presentation');
+      setIsReady(false);
+      if (timeoutId) clearTimeout(timeoutId);
       leavePresentation();
     };
   }, [id, navigate, dispatch, joinPresentation, leavePresentation]);
 
-useEffect(() => {
-  const checkConnection = setInterval(() => {
-    if (!signalRService.isConnected() && currentUser) {
-      console.log('Connection lost, attempting to reconnect...');
-      signalRService.start().then(() => {
-        if (id && currentUser) {
-          console.log('Reconnected, rejoining presentation...');
-          joinPresentation(id, currentUser.nickname);
-        }
-      });
-    }
-  }, 5000);
+  useEffect(() => {
+    const checkConnection = setInterval(() => {
+      if (!signalRService.isConnected() && currentUser) {
+        console.log('Connection lost, attempting to reconnect...');
+        setIsReady(false);
+        signalRService.start().then(() => {
+          if (id && currentUser) {
+            console.log('Reconnected, rejoining presentation...');
+            joinPresentation(id, currentUser.nickname).then(() => {
+              setIsReady(true);
+            });
+          }
+        });
+      }
+    }, 5000);
 
-  return () => clearInterval(checkConnection);
-}, [id, currentUser, joinPresentation]);
+    return () => clearInterval(checkConnection);
+  }, [id, currentUser, joinPresentation]);
 
-  if (isInitializing || isLoading) {
+  if (!isReady || isInitializing || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
         <p className="text-gray-600">
-          {!isConnected ? 'Connecting to server...' : 'Loading presentation...'}
+          {!isConnected ? 'Connecting to server...' : 'Preparing presentation...'}
         </p>
+        {!isConnected && (
+          <p className="text-sm text-gray-500 mt-2">
+            This may take a few seconds...
+          </p>
+        )}
       </div>
     );
   }
@@ -160,7 +209,6 @@ useEffect(() => {
     );
   }
 
-  const currentSlide = slides.find(s => s.id === currentSlideId);
   if (!currentSlide) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -177,20 +225,21 @@ useEffect(() => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      {/* Toolbar */}
+      {!isConnected && (
+        <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-md text-sm z-50">
+          Disconnected - Reconnecting...
+        </div>
+      )}
+      
       <Toolbar />
 
-      {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Slides Panel */}
         <SlidePanel />
 
-        {/* Canvas Area */}
         <div className="flex-1 flex items-center justify-center p-4">
-          <Canvas slide={currentSlide} />
+          <Canvas slide={currentSlide} isEditable={isReady && isConnected} />
         </div>
 
-        {/* Users Panel */}
         <UsersPanel />
       </div>
     </div>

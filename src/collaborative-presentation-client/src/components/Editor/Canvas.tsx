@@ -20,6 +20,14 @@ const Canvas: React.FC<CanvasProps> = ({ slide, isEditable = true }) => {
   const { addElement, updateElement, deleteElement } = useCanvas();
 
   useEffect(() => {
+    console.log('🖼️ Canvas received new slide data:', {
+      slideId: slide.id,
+      elementCount: slide.elements?.length || 0,
+      elements: slide.elements
+    });
+  }, [slide.id, JSON.stringify(slide.elements)]);
+
+  useEffect(() => {
     const updateDimensions = () => {
       if (!containerRef.current) return;
 

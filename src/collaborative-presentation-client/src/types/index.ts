@@ -1,17 +1,17 @@
 // Enums
-  export enum UserRole {
-    Viewer = 0,
-    Editor = 1,
-    Creator = 2
-  }
-  
-  export enum ElementType {
-    Text = 'Text',
-    Shape = 'Shape',
-    Image = 'Image',
-    Line = 'Line',
-    Arrow = 'Arrow'
-  }
+export enum UserRole {
+  Viewer = 0,
+  Editor = 1,
+  Creator = 2
+}
+
+export enum ElementType {
+  Text = 0,
+  Shape = 1,
+  Image = 2,
+  Line = 3,
+  Arrow = 4
+}
   
   // DTOs
   export interface PresentationDto {

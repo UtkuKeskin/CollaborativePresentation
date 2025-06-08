@@ -126,46 +126,68 @@ public class PresentationHub : Hub
         }
     }
 
-    public async Task<HubResponse<ElementDto>> UpdateElement(Guid slideId, ElementUpdateDto updateDto)
+    public async Task<HubResponse<ElementDto>> UpdateElement(ElementUpdateDto updateDto)
     {
         try
         {
+            _logger.LogInformation($"UpdateElement called - SlideId: {updateDto.SlideId}, ElementId: {updateDto.ElementId}, ConnectionId: {Context.ConnectionId}");
+
             var user = await _userSessionService.GetUserByConnectionIdAsync(Context.ConnectionId);
             if (user == null)
+            {
+                _logger.LogWarning($"User not found for connection: {Context.ConnectionId}");
                 return HubResponse<ElementDto>.CreateError("User not found");
+            }
+
+            _logger.LogInformation($"User info - Id: {user.Id}, Nickname: {user.Nickname}, PresentationId: {user.PresentationId}");
 
             var canEdit = await _presentationService.CanUserEditAsync(user.PresentationId, user.Id.ToString());
             if (!canEdit)
+            {
+                _logger.LogWarning($"User {user.Nickname} does not have permission to edit");
                 return HubResponse<ElementDto>.CreateError("You don't have permission to edit");
+            }
 
             ElementDto? element;
-            if (updateDto.ElementId == Guid.Empty)
+            
+            if (updateDto.ElementId == Guid.Empty || updateDto.ElementId == default(Guid))
             {
-                element = await _elementService.CreateElementAsync(slideId, updateDto.Data);
+                _logger.LogInformation($"Creating new element on slide {updateDto.SlideId}");
+                element = await _elementService.CreateElementAsync(updateDto.SlideId, updateDto.Data);
             }
             else
             {
+                _logger.LogInformation($"Updating existing element {updateDto.ElementId}");
                 element = await _elementService.UpdateElementAsync(updateDto.ElementId, updateDto.Data);
             }
 
             if (element == null)
+            {
+                _logger.LogError("Failed to create/update element");
                 return HubResponse<ElementDto>.CreateError("Failed to update element");
+            }
 
             await _userSessionService.UpdateUserActivityAsync(Context.ConnectionId);
+
+            _logger.LogInformation($"Sending ElementUpdated to group: {user.PresentationId.ToString()}");
 
             await Clients.Group(user.PresentationId.ToString()).SendAsync("ElementUpdated", new
             {
                 element,
                 updatedBy = user.Nickname,
-                slideId
+                slideId = updateDto.SlideId
             });
+
+            _logger.LogInformation($"ElementUpdated event sent to group {user.PresentationId.ToString()}");
+
+            _logger.LogInformation($"Element {element.Id} successfully updated/created and broadcast to group");
 
             return HubResponse<ElementDto>.CreateSuccess(element);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating element");
-            return HubResponse<ElementDto>.CreateError("An error occurred while updating the element");
+            return HubResponse<ElementDto>.CreateError($"An error occurred while updating the element: {ex.Message}");
         }
     }
 

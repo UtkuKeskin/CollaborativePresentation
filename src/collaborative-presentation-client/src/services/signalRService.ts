@@ -94,10 +94,27 @@ class SignalRService {
         store.dispatch(addConnectedUser(user));
       });
 
-    this.connection.on('ElementUpdated', (data: { element: ElementDto; updatedBy: string; slideId: string }) => {
-      console.log('Element updated:', data);
-      store.dispatch(updateElement({ slideId: data.slideId, element: data.element }));
-    });
+      this.connection.on('ElementUpdated', (data: { element: ElementDto; updatedBy: string; slideId: string }) => {
+        console.log('🔴 ElementUpdated event received:', {
+          elementId: data.element.id,
+          slideId: data.slideId,
+          updatedBy: data.updatedBy,
+          element: data.element
+        });
+      
+        const clonedElement = JSON.parse(JSON.stringify(data.element));
+      
+        console.log('🟡 Dispatching updateElement with cloned element...');
+        store.dispatch(updateElement({ slideId: data.slideId, element: clonedElement }));
+      
+        const state = store.getState();
+        const slide = state.presentation.slides.find(s => s.id === data.slideId);
+        console.log('🟢 Store state after dispatch:', {
+          slideFound: !!slide,
+          elementCount: slide?.elements?.length || 0,
+          elements: slide?.elements
+        });
+      });
 
     this.connection.on('ElementDeleted', (elementId: string) => {
       console.log('Element deleted:', elementId);
@@ -220,18 +237,37 @@ class SignalRService {
       console.warn('SignalR: Cannot update element - not connected');
       return;
     }
-
+  
     try {
-      const response = await this.connection.invoke('UpdateElement', slideId, {
-        elementId,
-        data
-      });
+      const updateDto = {
+        elementId: elementId || '00000000-0000-0000-0000-000000000000',
+        slideId: slideId,
+        updatedBy: '',
+        data: {
+          type: data.type,
+          content: data.content,
+          positionX: data.positionX,
+          positionY: data.positionY,
+          width: data.width,
+          height: data.height,
+          zIndex: data.zIndex,
+          properties: data.properties
+        }
+      };
+  
+      console.log('SignalR: Sending UpdateElement with DTO:', updateDto);
+  
+      const response = await this.connection.invoke('UpdateElement', updateDto);
       
       if (!response.success) {
         console.error('SignalR: Failed to update element:', response.message);
+        throw new Error(response.message || 'Failed to update element');
       }
+  
+      console.log('SignalR: Element updated successfully:', response.data);
     } catch (error) {
       console.error('SignalR: Failed to update element:', error);
+      throw error;
     }
   }
 
