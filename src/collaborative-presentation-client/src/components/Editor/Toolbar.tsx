@@ -125,7 +125,8 @@ const Toolbar: React.FC = () => {
     try {
       toastService.info('Generating PDF...');
       
-      const response = await fetch(`http://localhost:5167/api/export/presentation/${id}/pdf`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5167';
+      const response = await fetch(`${apiUrl}/api/export/presentation/${id}/pdf`);
       
       if (!response.ok) {
         throw new Error('Failed to generate PDF');

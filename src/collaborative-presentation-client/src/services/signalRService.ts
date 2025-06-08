@@ -29,6 +29,9 @@ class SignalRService {
   private createConnection() {
     const signalRUrl = process.env.REACT_APP_SIGNALR_URL || 'http://localhost:5167/presentationHub';
     
+    // Debug için
+    console.log('Using SignalR URL:', signalRUrl);
+    
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(signalRUrl)
       .withAutomaticReconnect({
