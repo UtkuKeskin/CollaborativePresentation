@@ -43,6 +43,11 @@ Real-time collaborative presentation software built with .NET Core and React.
 - PostgreSQL
 - Docker (optional)
 
+---
+## Demo Video
+🎥 **Full Demo**: [Watch on YouTube](https://youtu.be/55vOlhxqzlc?si=6D_vH5spx6IeK728)
+---
+
 ## 🏃‍♂️ Getting Started
 
 ### Clone the repository
